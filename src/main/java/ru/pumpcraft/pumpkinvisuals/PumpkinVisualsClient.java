@@ -1,6 +1,5 @@
 package ru.pumpcraft.pumpkinvisuals;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -10,7 +9,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
@@ -79,18 +78,14 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
 
             matrices.push();
             matrices.translate(-camera.x, -camera.y, -camera.z);
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
             try {
                 for (BlockPos pos : cachedOres) {
                     Box box = new Box(pos).expand(0.002);
                     float[] color = oreColor(client.world.getBlockState(pos));
-                    WorldRenderer.drawBox(matrices, lines, box, color[0], color[1], color[2], 0.95f);
+                    VertexRendering.drawBox(matrices, lines, box, color[0], color[1], color[2], 0.95f);
                 }
                 consumers.draw();
             } finally {
-                RenderSystem.depthMask(true);
-                RenderSystem.enableDepthTest();
                 matrices.pop();
             }
         });
