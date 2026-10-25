@@ -4,7 +4,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.particle.ParticleStatus;
+import net.minecraft.particle.ParticlesMode;
 import net.minecraft.text.Text;
 
 public final class PumpkinVisualsScreen extends Screen {
@@ -19,7 +19,7 @@ public final class PumpkinVisualsScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(toggleText("Частицы", PumpkinVisualsClient.reducedParticles), b -> {
             PumpkinVisualsClient.reducedParticles = !PumpkinVisualsClient.reducedParticles;
             MinecraftClient.getInstance().options.getParticles().setValue(
-                PumpkinVisualsClient.reducedParticles ? ParticleStatus.MINIMAL : ParticleStatus.ALL);
+                PumpkinVisualsClient.reducedParticles ? ParticlesMode.MINIMAL : ParticlesMode.ALL);
             b.setMessage(toggleText("Частицы", PumpkinVisualsClient.reducedParticles));
         }).dimensions(left, top, w, 20).build());
         addDrawableChild(ButtonWidget.builder(toggleText("Nearby HUD", PumpkinVisualsClient.nearbyHud), b -> {
