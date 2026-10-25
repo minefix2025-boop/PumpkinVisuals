@@ -24,10 +24,10 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
     public void onInitializeClient() {
         openMenuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.pumpkinvisuals.open_menu", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_RIGHT_SHIFT, KeyBinding.Category.MISC));
+                GLFW.GLFW_KEY_RIGHT_SHIFT, "key.categories.misc"));
         autoEatKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.pumpkinvisuals.auto_eat", InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_Z, KeyBinding.Category.MISC));
+                GLFW.GLFW_KEY_Z, "key.categories.misc"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMenuKey.wasPressed()) client.setScreen(new PumpkinVisualsScreen());
             while (autoEatKey.wasPressed()) useFoodInHand(client);
