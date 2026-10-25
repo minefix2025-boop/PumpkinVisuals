@@ -28,14 +28,10 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
         autoEatKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.pumpkinvisuals.auto_eat", InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_Z, KeyBinding.Category.MISC));
-
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMenuKey.wasPressed()) client.setScreen(new PumpkinVisualsScreen());
             while (autoEatKey.wasPressed()) useFoodInHand(client);
-            if (autoEatEnabled && client.player != null
-                    && client.player.getHungerManager().getFoodLevel() <= 14) {
-                tryAutoEat(client);
-            }
+            if (autoEatEnabled && client.player != null && client.player.getHungerManager().getFoodLevel() <= 14) tryAutoEat(client);
         });
     }
 
