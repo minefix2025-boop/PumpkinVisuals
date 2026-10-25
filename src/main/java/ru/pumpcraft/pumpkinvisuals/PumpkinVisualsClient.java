@@ -5,9 +5,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
@@ -19,7 +18,6 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
     public static boolean reducedParticles = false;
     public static boolean nearbyHud = true;
     public static boolean autoEatEnabled = true;
-    public static boolean xrayWarningAccepted = false;
     private static long lastEatTime = 0L;
 
     @Override
@@ -32,24 +30,25 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_Z, KeyBinding.Category.MISC));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (openMenuKey.wasPressed()) {
-                client.setScreen(new PumpkinVisualsScreen());
-            }
-            while (autoEatKey.wasPressed()) {
-                useSelectedFood(client);
-            }
-            if (autoEatEnabled && client.player != null && client.player.getHungerManager().getFoodLevel() <= 14) {
+            while (openMenuKey.wasPressed()) client.setScreen(new PumpkinVisualsScreen());
+            while (autoEatKey.wasPressed()) useFoodInHand(client);
+            if (autoEatEnabled && client.player != null
+                    && client.player.getHungerManager().getFoodLevel() <= 14) {
                 tryAutoEat(client);
             }
         });
     }
 
-    private static void useSelectedFood(MinecraftClient client) {
+    private static boolean isFood(ItemStack stack) {
+        return stack.contains(DataComponentTypes.FOOD);
+    }
+
+    private static void useFoodInHand(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
-        if (client.player.getMainHandStack().getFoodComponent() != null) {
+        if (isFood(client.player.getMainHandStack())) {
             client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
         } else {
-            client.player.sendMessage(Text.literal("§dPumpkinVisuals §7» Возьми еду в руку, чтобы использовать её."), true);
+            client.player.sendMessage(Text.literal("§dPumpkinVisuals §7» Возьми еду в руку."), true);
         }
     }
 
@@ -59,28 +58,12 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
         if (now - lastEatTime < 1200) return;
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = client.player.getInventory().getStack(slot);
-            if (stack.getFoodComponent() != null) {
+            if (isFood(stack)) {
                 client.player.getInventory().setSelectedSlot(slot);
                 client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
                 lastEatTime = now;
                 return;
             }
         }
-    }
-
-    public static String armorSummary(MinecraftClient client) {
-        if (client.player == null) return "Броня: —";
-        int count = 0;
-        for (ItemStack stack : client.player.getArmorItems()) {
-            if (!stack.isEmpty()) count++;
-        }
-        return "Броня: " + count + "/4";
-    }
-
-    public static String potionSummary(MinecraftClient client) {
-        if (client.player == null) return "Эффекты: —";
-        int count = 0;
-        for (StatusEffectInstance ignored : client.player.getStatusEffects()) count++;
-        return "Эффекты зелий: " + count;
     }
 }
