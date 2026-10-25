@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "pumpkinvisuals",
+  "version": "${version}",
+  "name": "PumpkinVisuals",
+  "description": "Client-side visual controls, performance helpers and HUD tools for Minecraft 1.21.6.",
+  "authors": ["PUMPCraft"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "ru.pumpcraft.pumpkinvisuals.PumpkinVisualsClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.21.6",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
