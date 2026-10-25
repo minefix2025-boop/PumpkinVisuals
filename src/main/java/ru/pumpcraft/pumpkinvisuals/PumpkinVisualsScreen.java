@@ -41,7 +41,8 @@ public final class PumpkinVisualsScreen extends Screen {
     }
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // Avoid Minecraft's blur pipeline: it can be invoked twice in a frame with some renderers.
+        context.fill(0, 0, width, height, 0x99000000);
         int left = width / 2 - 125, top = height / 2 - 104;
         context.fill(left, top, left + 250, top + 235, PANEL);
         context.fill(left, top, left + 250, top + 3, PURPLE);
