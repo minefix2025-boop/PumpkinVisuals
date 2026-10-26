@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
@@ -19,7 +20,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.block.BlockState;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -28,7 +28,6 @@ import java.util.List;
 public final class PumpkinVisualsClient implements ClientModInitializer {
     public static KeyBinding openMenuKey;
     public static KeyBinding autoEatKey;
-
     public static boolean reducedParticles = true;
     public static boolean nearbyHud = true;
     public static boolean autoEatEnabled = false;
@@ -49,10 +48,17 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMenuKey.wasPressed()) client.setScreen(new PumpkinVisualsScreen());
-            while (autoEatKey.wasPressed()) useFoodInHand(client);
+            while (autoEatKey.wasPressed()) {
+                autoEatEnabled = !autoEatEnabled;
+                if (client.player != null) {
+                    client.player.sendMessage(Text.literal("§6PumpkinVisuals §8» §fАвтоеда: "
+                            + (autoEatEnabled ? "§aВКЛ" : "§cВЫКЛ")), true);
+                }
+            }
 
-            if (autoEatEnabled && client.player != null
-                    && client.player.getHungerManager().getFoodLevel() <= 14) {
+            if (autoEatEnabled && client.player != null && client.interactionManager != null
+                    && client.player.getHungerManager().getFoodLevel() <= 14
+                    && !client.player.isUsingItem()) {
                 tryAutoEat(client);
             }
 
@@ -68,14 +74,11 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (!xrayEnabled || client.world == null || client.player == null || cachedOres.isEmpty()) return;
-
             MatrixStack matrices = context.matrixStack();
             if (matrices == null) return;
-
             Vec3d camera = context.camera().getPos();
             VertexConsumerProvider.Immediate consumers = client.getBufferBuilders().getEntityVertexConsumers();
             VertexConsumer lines = consumers.getBuffer(RenderLayer.getLines());
-
             matrices.push();
             matrices.translate(-camera.x, -camera.y, -camera.z);
             try {
@@ -98,7 +101,6 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
         int radius = 16;
         int minY = Math.max(client.world.getBottomY(), origin.getY() - 12);
         int maxY = Math.min(client.world.getTopYInclusive(), origin.getY() + 12);
-
         for (int x = origin.getX() - radius; x <= origin.getX() + radius; x++) {
             for (int z = origin.getZ() - radius; z <= origin.getZ() + radius; z++) {
                 if ((x - origin.getX()) * (x - origin.getX())
@@ -131,30 +133,22 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
     }
 
     private static boolean isFood(ItemStack stack) {
-        return stack.contains(DataComponentTypes.FOOD);
-    }
-
-    private static void useFoodInHand(MinecraftClient client) {
-        if (client.player == null || client.interactionManager == null) return;
-        if (isFood(client.player.getMainHandStack())) {
-            client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
-        } else {
-            client.player.sendMessage(Text.literal("§dPumpkinVisuals §7» Возьми еду в руку."), true);
-        }
+        return !stack.isEmpty() && stack.contains(DataComponentTypes.FOOD);
     }
 
     private static void tryAutoEat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
         long now = System.currentTimeMillis();
-        if (now - lastEatTime < 1200) return;
+        if (now - lastEatTime < 1400) return;
+
+        // Only choose food that can restore hunger; avoid repeatedly trying an empty slot.
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = client.player.getInventory().getStack(slot);
-            if (isFood(stack)) {
-                client.player.getInventory().setSelectedSlot(slot);
-                client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
-                lastEatTime = now;
-                return;
-            }
+            if (!isFood(stack)) continue;
+            client.player.getInventory().setSelectedSlot(slot);
+            client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
+            lastEatTime = now;
+            return;
         }
     }
 }
