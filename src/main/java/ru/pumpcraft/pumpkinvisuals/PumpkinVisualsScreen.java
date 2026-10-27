@@ -66,12 +66,13 @@ public final class PumpkinVisualsScreen extends Screen {
                 rows.add(toggle("Player ESP","Highlight players in loaded chunks",()->PumpkinVisualsClient.playerEspEnabled,v->PumpkinVisualsClient.playerEspEnabled=v));
                 rows.add(toggle("Reduced Particles","Reduce particle clutter",()->PumpkinVisualsClient.reducedParticles,v->particles()));
                 rows.add(toggle("Long View","8 / 12 chunk render distance",()->MinecraftClient.getInstance().options.getViewDistance().getValue()>=12,v->viewDistance()));
-                rows.add(new Row("Chinese Cone Hat","Cosmetic headwear renderer is being added","COSMETIC",()->{}));
+                rows.add(toggle("Chinese Cone Hat","Orange stepped conical hat above your head",()->PumpkinVisualsClient.chineseHatEnabled,v->PumpkinVisualsClient.chineseHatEnabled=v));
                 rows.add(new Row("World Scan","Ore scan radius is 16 blocks","16 BLOCKS",()->{}));
             }
             case PLAYER -> {
                 rows.add(toggle("Auto Eat","Use food when hunger reaches 14",()->PumpkinVisualsClient.autoEatEnabled,v->PumpkinVisualsClient.autoEatEnabled=v));
                 rows.add(new Row("Auto Eat hotkey","Press Z to switch Auto Eat","Z",()->{}));
+                rows.add(toggle("Auto Sprint","Sprint automatically while moving forward",()->PumpkinVisualsClient.autoSprintEnabled,v->PumpkinVisualsClient.autoSprintEnabled=v));
                 rows.add(toggle("Smooth Camera","Toggle view bobbing",()->MinecraftClient.getInstance().options.getBobView().getValue(),v->bobbing()));
                 rows.add(toggle("Wide FOV","Toggle 90 / 110 FOV",()->MinecraftClient.getInstance().options.getFov().getValue()>=100,v->fov()));
                 rows.add(new Row("Player status","Local client player status","LIVE",()->{}));
