@@ -12,6 +12,9 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
@@ -32,6 +35,9 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
     public static boolean nearbyHud = true;
     public static boolean autoEatEnabled = false;
     public static boolean xrayEnabled = false;
+    public static boolean triggerBotEnabled = false;
+    public static boolean killAuraEnabled = false;
+    public static boolean playerEspEnabled = false;
 
     private static long lastEatTime;
     private static int ticksSinceScan;
@@ -62,6 +68,10 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
                 tryAutoEat(client);
             }
 
+            if (client.player != null && client.world != null && client.interactionManager != null) {
+                runCombatAssist(client);
+            }
+
             if (client.world == null || client.player == null || !xrayEnabled) {
                 cachedOres = List.of();
                 ticksSinceScan = 0;
@@ -73,7 +83,8 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            if (!xrayEnabled || client.world == null || client.player == null || cachedOres.isEmpty()) return;
+            if (client.world == null || client.player == null
+                    || ((!xrayEnabled || cachedOres.isEmpty()) && !playerEspEnabled)) return;
             MatrixStack matrices = context.matrixStack();
             if (matrices == null) return;
             Vec3d camera = context.camera().getPos();
@@ -82,16 +93,58 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
             matrices.push();
             matrices.translate(-camera.x, -camera.y, -camera.z);
             try {
-                for (BlockPos pos : cachedOres) {
-                    Box box = new Box(pos).expand(0.002);
-                    float[] color = oreColor(client.world.getBlockState(pos));
-                    VertexRendering.drawBox(matrices, lines, box, color[0], color[1], color[2], 0.95f);
+                if (xrayEnabled) {
+                    for (BlockPos pos : cachedOres) {
+                        Box box = new Box(pos).expand(0.002);
+                        float[] color = oreColor(client.world.getBlockState(pos));
+                        VertexRendering.drawBox(matrices, lines, box, color[0], color[1], color[2], 0.95f);
+                    }
+                }
+                if (playerEspEnabled) {
+                    for (var other : client.world.getPlayers()) {
+                        if (other == client.player || other.isSpectator() || !other.isAlive()) continue;
+                        Box box = other.getBoundingBox().expand(0.06);
+                        VertexRendering.drawBox(matrices, lines, box, 1.0f, 0.42f, 0.05f, 0.95f);
+                    }
                 }
                 consumers.draw();
             } finally {
                 matrices.pop();
             }
         });
+    }
+
+    private static long lastCombatAttack;
+
+    private static void runCombatAssist(MinecraftClient client) {
+        long now = System.currentTimeMillis();
+        if (now - lastCombatAttack < 80 || client.player.isSpectator()
+                || client.player.isCreative() || client.player.isUsingItem()) return;
+
+        LivingEntity target = null;
+        if (triggerBotEnabled && client.crosshairTarget instanceof EntityHitResult hit
+                && hit.getEntity() instanceof LivingEntity living
+                && living != client.player && living.isAlive() && !living.isSpectator()
+                && client.player.squaredDistanceTo(living) <= 3.4 * 3.4) {
+            target = living;
+        } else if (killAuraEnabled && !triggerBotEnabled) {
+            target = client.world.getOtherEntities(client.player,
+                            client.player.getBoundingBox().expand(3.2),
+                            entity -> entity instanceof LivingEntity && entity.isAlive()
+                                    && !entity.isSpectator() && !(entity instanceof ArmorStandEntity))
+                    .stream()
+                    .filter(entity -> entity instanceof LivingEntity)
+                    .map(entity -> (LivingEntity) entity)
+                    .filter(entity -> client.player.squaredDistanceTo(entity) <= 3.2 * 3.2)
+                    .min(java.util.Comparator.comparingDouble(client.player::squaredDistanceTo))
+                    .orElse(null);
+        }
+
+        if (target != null && client.player.getAttackCooldownProgress(0.0f) >= 1.0f) {
+            client.interactionManager.attackEntity(client.player, target);
+            client.player.swingHand(Hand.MAIN_HAND);
+            lastCombatAttack = now;
+        }
     }
 
     private static List<BlockPos> scanNearbyOres(MinecraftClient client) {
