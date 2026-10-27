@@ -110,7 +110,7 @@ public final class PumpkinVisualsScreen extends Screen {
             ctx.fill(getX()+3,getY()+height-2,getX()+width,getY()+height,isHovered()?ORANGE:ORANGE_DARK);
             int tw=textRenderer.getWidth(getMessage());ctx.drawTextWithShadow(textRenderer,getMessage(),getX()+Math.max(7,(width-tw)/2),getY()+(height-8)/2,isHovered()?WHITE:0xFFE9D9C9);
         }
-        @Override protected void onClick(double mouseX,double mouseY){action.run();}
+        @Override public void onClick(double mouseX,double mouseY){action.run();}
         @Override protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder){appendDefaultNarrations(builder);}
     }
     @Override public void render(DrawContext ctx,int mx,int my,float delta){
