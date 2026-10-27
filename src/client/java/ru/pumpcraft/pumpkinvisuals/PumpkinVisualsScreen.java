@@ -4,7 +4,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.Click;
 import net.minecraft.particle.ParticlesMode;
 import net.minecraft.text.Text;
 import java.util.ArrayList;
@@ -111,7 +110,7 @@ public final class PumpkinVisualsScreen extends Screen {
             ctx.fill(getX()+3,getY()+height-2,getX()+width,getY()+height,isHovered()?ORANGE:ORANGE_DARK);
             int tw=textRenderer.getWidth(getMessage());ctx.drawTextWithShadow(textRenderer,getMessage(),getX()+Math.max(7,(width-tw)/2),getY()+(height-8)/2,isHovered()?WHITE:0xFFE9D9C9);
         }
-        @Override public void onClick(Click click){action.run();}
+        @Override protected void onClick(double mouseX,double mouseY){action.run();}
         @Override protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder){appendDefaultNarrations(builder);}
     }
     @Override public void render(DrawContext ctx,int mx,int my,float delta){
