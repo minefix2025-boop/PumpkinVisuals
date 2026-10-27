@@ -65,7 +65,7 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
             }
 
             if (autoSprintEnabled && client.player != null && client.player.input != null
-                    && client.player.input.movementForward > 0.0f && !client.player.isSneaking()) {
+                    && client.options.forwardKey.isPressed() && !client.player.isSneaking()) {
                 client.player.setSprinting(true);
             }
 
