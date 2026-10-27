@@ -7,133 +7,185 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.particle.ParticlesMode;
 import net.minecraft.text.Text;
 
-public final class PumpkinVisualsScreen extends Screen {
-    private static final int BG = 0xE90C0B12;
-    private static final int PANEL = 0xFF17151F;
-    private static final int PANEL2 = 0xFF201C2A;
-    private static final int LINE = 0xFF393041;
-    private static final int ORANGE = 0xFFFF8A32;
-    private static final int ORANGE_DARK = 0xFFB94F22;
-    private static final int WHITE = 0xFFF5F0F7;
-    private static final int MUTED = 0xFFAAA1B5;
-    private static final int GREEN = 0xFF64E89A;
-    private static final int RED = 0xFFFF667D;
+import java.util.ArrayList;
+import java.util.List;
 
-    public PumpkinVisualsScreen() { super(Text.literal("PumpkinVisuals")); }
+public final class PumpkinVisualsScreen extends Screen {
+    private static final int BG = 0xF00B0806;
+    private static final int PANEL = 0xFF17100B;
+    private static final int CARD = 0xFF21150D;
+    private static final int CARD_HOVER = 0xFF302014;
+    private static final int LINE = 0xFF593019;
+    private static final int ORANGE = 0xFFFF8500;
+    private static final int WHITE = 0xFFF5F0F8;
+    private static final int MUTED = 0xFFB6AABD;
+    private static final int GREEN = 0xFF62E79A;
+    private static final int RED = 0xFFFF6D80;
+
+    private enum Tab { VISUALS, PLAYER, WORLD, SETTINGS }
+    private Tab tab = Tab.VISUALS;
+    private int scroll;
+    private int panelLeft, panelTop, panelWidth, panelHeight, sideWidth, contentLeft, contentWidth;
+    private final List<Row> rows = new ArrayList<>();
+
+    private record Row(String title, String description, String status, Runnable action) {}
+
+    public PumpkinVisualsScreen() {
+        super(Text.literal("PumpkinVisuals"));
+    }
 
     @Override
     protected void init() {
-        clearChildren();
-        int pw = Math.min(760, width - 24);
-        int ph = Math.min(470, height - 24);
-        int left = (width - pw) / 2;
-        int top = (height - ph) / 2;
-        int sidebar = Math.max(130, Math.min(165, pw / 4));
-        int contentX = left + sidebar + 22;
-        int contentW = pw - sidebar - 42;
-        int buttonW = Math.min(150, contentW - 20);
-        int rowH = 62;
-        int startY = top + 106;
-
-        addDrawableChild(ButtonWidget.builder(toggleText("Частицы", PumpkinVisualsClient.reducedParticles), b -> {
-            PumpkinVisualsClient.reducedParticles = !PumpkinVisualsClient.reducedParticles;
-            MinecraftClient.getInstance().options.getParticles().setValue(
-                    PumpkinVisualsClient.reducedParticles ? ParticlesMode.MINIMAL : ParticlesMode.ALL);
-            b.setMessage(toggleText("Частицы", PumpkinVisualsClient.reducedParticles));
-        }).dimensions(contentX + contentW - buttonW - 8, startY + 14, buttonW, 28).build());
-
-        addDrawableChild(ButtonWidget.builder(toggleText("Счётчик игроков", PumpkinVisualsClient.nearbyHud), b -> {
-            PumpkinVisualsClient.nearbyHud = !PumpkinVisualsClient.nearbyHud;
-            b.setMessage(toggleText("Счётчик игроков", PumpkinVisualsClient.nearbyHud));
-        }).dimensions(contentX + contentW - buttonW - 8, startY + rowH + 14, buttonW, 28).build());
-
-        addDrawableChild(ButtonWidget.builder(toggleText("Автоеда", PumpkinVisualsClient.autoEatEnabled), b -> {
-            PumpkinVisualsClient.autoEatEnabled = !PumpkinVisualsClient.autoEatEnabled;
-            b.setMessage(toggleText("Автоеда", PumpkinVisualsClient.autoEatEnabled));
-        }).dimensions(contentX + contentW - buttonW - 8, startY + rowH * 2 + 14, buttonW, 28).build());
-
-        addDrawableChild(ButtonWidget.builder(toggleText("Ore X-Ray", PumpkinVisualsClient.xrayEnabled), b -> {
-            PumpkinVisualsClient.xrayEnabled = !PumpkinVisualsClient.xrayEnabled;
-            b.setMessage(toggleText("Ore X-Ray", PumpkinVisualsClient.xrayEnabled));
-        }).dimensions(contentX + contentW - buttonW - 8, startY + rowH * 3 + 14, buttonW, 28).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("ЗАКРЫТЬ"), b -> close())
-                .dimensions(left + pw - 118, top + ph - 39, 100, 25).build());
+        panelWidth = Math.min(760, width - 20);
+        panelHeight = Math.min(470, height - 20);
+        panelLeft = (width - panelWidth) / 2;
+        panelTop = (height - panelHeight) / 2;
+        sideWidth = 142;
+        contentLeft = panelLeft + sideWidth + 16;
+        contentWidth = panelWidth - sideWidth - 30;
+        rebuildRows();
+        rebuildWidgets();
     }
 
-    private static Text toggleText(String name, boolean enabled) {
-        return Text.literal(name + "  »  " + (enabled ? "§aON" : "§cOFF"));
+    private void rebuildRows() {
+        rows.clear();
+        switch (tab) {
+            case VISUALS -> {
+                rows.add(new Row("Частицы", "Снижает количество частиц Minecraft",
+                        state(PumpkinVisualsClient.reducedParticles), () -> {
+                    PumpkinVisualsClient.reducedParticles = !PumpkinVisualsClient.reducedParticles;
+                    MinecraftClient.getInstance().options.getParticles().setValue(
+                            PumpkinVisualsClient.reducedParticles ? ParticlesMode.MINIMAL : ParticlesMode.ALL);
+                }));
+                rows.add(new Row("Ore X-Ray", "Подсветка найденных руд в загруженной области",
+                        state(PumpkinVisualsClient.xrayEnabled), () ->
+                        PumpkinVisualsClient.xrayEnabled = !PumpkinVisualsClient.xrayEnabled));
+            }
+            case PLAYER -> {
+                rows.add(new Row("Автоеда", "Пробует есть еду при голоде 7 единиц или ниже",
+                        state(PumpkinVisualsClient.autoEatEnabled), () ->
+                        PumpkinVisualsClient.autoEatEnabled = !PumpkinVisualsClient.autoEatEnabled));
+                rows.add(new Row("Счётчик игроков", "Показывает количество игроков в мире",
+                        state(PumpkinVisualsClient.nearbyHud), () ->
+                        PumpkinVisualsClient.nearbyHud = !PumpkinVisualsClient.nearbyHud));
+                rows.add(new Row("Клавиша автоеды", "Z — включить или выключить автоеду", "Z", () -> {}));
+            }
+            case WORLD -> {
+                rows.add(new Row("Ore X-Ray", "Контуры руд в радиусе сканирования",
+                        state(PumpkinVisualsClient.xrayEnabled), () ->
+                        PumpkinVisualsClient.xrayEnabled = !PumpkinVisualsClient.xrayEnabled));
+                rows.add(new Row("Примечание", "Видимость контуров сквозь стены пока не подтверждена", "INFO", () -> {}));
+            }
+            case SETTINGS -> {
+                rows.add(new Row("Открыть меню", "Правая Shift", "RSHIFT", () -> {}));
+                rows.add(new Row("Версия", "Fabric • Minecraft 1.21.6", "1.21.6", () -> {}));
+                rows.add(new Row("PumpkinVisuals", "Хэллоуинская сборка клиента", "BETA", () -> {}));
+            }
+        }
+    }
+
+    private static String state(boolean value) { return value ? "ВКЛ" : "ВЫКЛ"; }
+
+    private void rebuildWidgets() {
+        clearChildren();
+        int navX = panelLeft + 10;
+        int navW = sideWidth - 20;
+        int navY = panelTop + 90;
+        addDrawableChild(nav("Визуал", Tab.VISUALS, navX, navY, navW));
+        addDrawableChild(nav("Игрок", Tab.PLAYER, navX, navY + 30, navW));
+        addDrawableChild(nav("Мир", Tab.WORLD, navX, navY + 60, navW));
+        addDrawableChild(nav("Настройки", Tab.SETTINGS, navX, navY + 90, navW));
+
+        int rowY = panelTop + 88;
+        int rowH = 46;
+        int visibleBottom = panelTop + panelHeight - 55;
+        for (int i = 0; i < rows.size(); i++) {
+            int y = rowY + i * (rowH + 8) - scroll;
+            if (y < panelTop + 65 || y + 24 > visibleBottom) continue;
+            Row row = rows.get(i);
+            int btnW = Math.min(105, contentWidth - 12);
+            int btnX = panelLeft + panelWidth - btnW - 12;
+            addDrawableChild(ButtonWidget.builder(buttonLabel(row), b -> {
+                row.action().run();
+                rebuildRows();
+                rebuildWidgets();
+            }).dimensions(btnX, y + 7, btnW, 24).build());
+        }
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("Закрыть"), b -> close())
+                .dimensions(panelLeft + panelWidth - 94, panelTop + panelHeight - 31, 82, 20).build());
+    }
+
+    private ButtonWidget nav(String label, Tab target, int x, int y, int w) {
+        return ButtonWidget.builder(Text.literal((tab == target ? "§6» §f" : "§7") + label), b -> {
+            tab = target;
+            scroll = 0;
+            rebuildRows();
+            rebuildWidgets();
+        }).dimensions(x, y, w, 22).build();
+    }
+
+    private Text buttonLabel(Row row) {
+        if (row.status().equals("ВКЛ")) return Text.literal("§aВКЛ");
+        if (row.status().equals("ВЫКЛ")) return Text.literal("§cВЫКЛ");
+        return Text.literal("§6" + row.status());
     }
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, width, height, 0xB9000000);
-        int pw = Math.min(760, width - 24);
-        int ph = Math.min(470, height - 24);
-        int left = (width - pw) / 2;
-        int top = (height - ph) / 2;
-        int sidebar = Math.max(130, Math.min(165, pw / 4));
-        int contentX = left + sidebar + 22;
-        int contentW = pw - sidebar - 42;
-        int startY = top + 106;
-        int rowH = 62;
+        ctx.fill(panelLeft - 1, panelTop - 1, panelLeft + panelWidth + 1, panelTop + panelHeight + 1, ORANGE);
+        ctx.fill(panelLeft, panelTop, panelLeft + panelWidth, panelTop + panelHeight, BG);
+        ctx.fill(panelLeft, panelTop, panelLeft + panelWidth, panelTop + 3, ORANGE);
+        ctx.fill(panelLeft + 1, panelTop + 3, panelLeft + sideWidth, panelTop + panelHeight - 1, PANEL);
+        ctx.fill(panelLeft + sideWidth, panelTop + 3, panelLeft + sideWidth + 1, panelTop + panelHeight - 1, LINE);
 
-        // Entirely custom Halloween client shell; no vanilla blur pipeline.
-        ctx.fill(left - 1, top - 1, left + pw + 1, top + ph + 1, ORANGE_DARK);
-        ctx.fill(left, top, left + pw, top + ph, BG);
-        ctx.fill(left, top, left + pw, top + 3, ORANGE);
-        ctx.fill(left, top + 3, left + sidebar, top + ph, PANEL);
-        ctx.fill(left + sidebar - 1, top + 3, left + sidebar, top + ph, LINE);
+        ctx.drawTextWithShadow(textRenderer, "PUMPKIN", panelLeft + 13, panelTop + 17, ORANGE);
+        ctx.drawTextWithShadow(textRenderer, "VISUALS", panelLeft + 13, panelTop + 31, WHITE);
+        ctx.drawTextWithShadow(textRenderer, "HALLOWEEN CLIENT", panelLeft + 13, panelTop + 49, MUTED);
+        ctx.fill(panelLeft + 10, panelTop + 69, panelLeft + sideWidth - 10, panelTop + 70, LINE);
+        ctx.drawTextWithShadow(textRenderer, "1.21.6 • FABRIC", panelLeft + 12, panelTop + panelHeight - 35, MUTED);
 
-        ctx.drawTextWithShadow(textRenderer, "☾  PUMPKIN", left + 18, top + 17, ORANGE);
-        ctx.drawTextWithShadow(textRenderer, "VISUALS", left + 18, top + 31, WHITE);
-        ctx.drawTextWithShadow(textRenderer, "CLIENT  /  1.21.6", left + 18, top + 51, MUTED);
-        ctx.fill(left + 14, top + 70, left + sidebar - 14, top + 71, LINE);
+        ctx.drawTextWithShadow(textRenderer, title(), contentLeft, panelTop + 17, WHITE);
+        ctx.drawTextWithShadow(textRenderer, "Функции клиента", contentLeft, panelTop + 34, MUTED);
+        ctx.fill(contentLeft, panelTop + 54, panelLeft + panelWidth - 12, panelTop + 55, LINE);
 
-        drawNav(ctx, left + 17, top + 88, "OVERVIEW", true);
-        drawNav(ctx, left + 17, top + 119, "VISUALS", false);
-        drawNav(ctx, left + 17, top + 150, "PLAYER", false);
-        drawNav(ctx, left + 17, top + 181, "WORLD", false);
-        drawNav(ctx, left + 17, top + 212, "SETTINGS", false);
+        int rowY = panelTop + 88;
+        int rowH = 46;
+        int visibleTop = panelTop + 65;
+        int visibleBottom = panelTop + panelHeight - 55;
+        ctx.enableScissor(contentLeft, visibleTop, panelLeft + panelWidth - 10, visibleBottom);
+        for (int i = 0; i < rows.size(); i++) {
+            int y = rowY + i * (rowH + 8) - scroll;
+            if (y + rowH < visibleTop || y > visibleBottom) continue;
+            Row row = rows.get(i);
+            ctx.fill(contentLeft, y, panelLeft + panelWidth - 12, y + rowH, CARD);
+            ctx.fill(contentLeft, y, contentLeft + 2, y + rowH, LINE);
+            ctx.drawTextWithShadow(textRenderer, row.title(), contentLeft + 10, y + 7, WHITE);
+            ctx.drawTextWithShadow(textRenderer, row.description(), contentLeft + 10, y + 24, MUTED);
+        }
+        ctx.disableScissor();
 
-        ctx.fill(left + 14, top + ph - 62, left + sidebar - 14, top + ph - 61, LINE);
-        ctx.drawTextWithShadow(textRenderer, "HALLOWEEN BUILD", left + 17, top + ph - 48, ORANGE);
-        ctx.drawTextWithShadow(textRenderer, "RIGHT SHIFT  •  MENU", left + 17, top + ph - 32, MUTED);
-
-        ctx.drawTextWithShadow(textRenderer, "Utilities", contentX, top + 18, WHITE);
-        ctx.drawTextWithShadow(textRenderer, "Твои функции и быстрые настройки", contentX, top + 35, MUTED);
-        ctx.fill(contentX, top + 57, contentX + contentW, top + 58, LINE);
-
-        ctx.fill(contentX, top + 68, contentX + contentW, top + 95, PANEL2);
-        ctx.fill(contentX, top + 68, contentX + 3, top + 95, ORANGE);
-        ctx.drawTextWithShadow(textRenderer, "●  СТАТУС СИСТЕМЫ", contentX + 12, top + 77, ORANGE);
-        String status = MinecraftClient.getInstance().player == null ? "Не в мире" : "Клиент активен";
-        ctx.drawTextWithShadow(textRenderer, status, contentX + contentW - textRenderer.getWidth(status) - 12, top + 77, GREEN);
-
-        card(ctx, contentX, startY, contentW, rowH, "PARTICLE CONTROL", "Уменьшает визуальный шум и эффекты.");
-        card(ctx, contentX, startY + rowH, contentW, rowH, "PLAYER COUNTER", "Показывает число игроков в текущем мире.");
-        card(ctx, contentX, startY + rowH * 2, contentW, rowH, "AUTO EAT", "Автоматически использует еду при голоде. Клавиша Z — вкл/выкл.");
-        card(ctx, contentX, startY + rowH * 3, contentW, rowH, "ORE X-RAY", "Подсветка найденных руд в загруженной области.");
-
-        MinecraftClient client = MinecraftClient.getInstance();
-        int players = client.world == null ? 0 : Math.max(0, client.world.getPlayers().size() - 1);
-        ctx.drawTextWithShadow(textRenderer, "Игроков в мире: " + players, contentX, top + ph - 35, MUTED);
+        ctx.fill(contentLeft, panelTop + panelHeight - 51, panelLeft + panelWidth - 12, panelTop + panelHeight - 50, LINE);
+        ctx.drawTextWithShadow(textRenderer, "PUMPKINVISUALS  /  BETA", contentLeft, panelTop + panelHeight - 38, ORANGE);
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void card(DrawContext ctx, int x, int y, int w, int h, String title, String desc) {
-        ctx.fill(x, y, x + w, y + h - 5, PANEL);
-        ctx.fill(x, y, x + 2, y + h - 5, LINE);
-        ctx.drawTextWithShadow(textRenderer, title, x + 12, y + 11, WHITE);
-        ctx.drawTextWithShadow(textRenderer, desc, x + 12, y + 29, MUTED);
+    private String title() {
+        return switch (tab) {
+            case VISUALS -> "Визуал";
+            case PLAYER -> "Игрок";
+            case WORLD -> "Мир";
+            case SETTINGS -> "Настройки";
+        };
     }
 
-    private void drawNav(DrawContext ctx, int x, int y, String label, boolean active) {
-        if (active) {
-            ctx.fill(x - 7, y - 5, x + 112, y + 17, 0xFF35241E);
-            ctx.fill(x - 7, y - 5, x - 4, y + 17, ORANGE);
-        }
-        ctx.drawTextWithShadow(textRenderer, label, x, y, active ? ORANGE : MUTED);
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        int maxScroll = Math.max(0, rows.size() * 54 - (panelHeight - 150));
+        scroll = Math.max(0, Math.min(maxScroll, scroll - (int) (verticalAmount * 24)));
+        rebuildWidgets();
+        return true;
     }
 
     @Override public boolean shouldPause() { return false; }
