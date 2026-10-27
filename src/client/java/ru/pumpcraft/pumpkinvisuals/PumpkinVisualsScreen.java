@@ -75,7 +75,7 @@ public final class PumpkinVisualsScreen extends Screen {
             }
             case PLAYER -> {
                 rows.add(new Row("Auto Eat", "Uses food when hunger is 14 or lower", state(PumpkinVisualsClient.autoEatEnabled), () -> PumpkinVisualsClient.autoEatEnabled = !PumpkinVisualsClient.autoEatEnabled));
-                rows.add(new Row("Player Counter", "Show player count in the current world", state(PumpkinVisualsClient.nearbyHud), () -> PumpkinVisualsClient.nearbyHud = !PumpkinVisualsClient.nearbyHud));
+                rows.add(new Row("Auto Eat Key", "Press Z to toggle Auto Eat", "Z", () -> {}));
                 rows.add(new Row("Auto Eat Key", "Press Z to toggle Auto Eat", "Z", () -> {}));
             }
             case SETTINGS -> {
