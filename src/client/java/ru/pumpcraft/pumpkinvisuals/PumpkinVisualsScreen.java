@@ -11,12 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class PumpkinVisualsScreen extends Screen {
-    private static final int BG = 0xF00D0B13;
-    private static final int PANEL = 0xFF17141E;
-    private static final int CARD = 0xFF211C29;
-    private static final int CARD_HOVER = 0xFF2B2334;
-    private static final int LINE = 0xFF3D3049;
-    private static final int ORANGE = 0xFFFF8B35;
+    private static final int BG = 0xF00B0806;
+    private static final int PANEL = 0xFF17100B;
+    private static final int CARD = 0xFF21150D;
+    private static final int CARD_HOVER = 0xFF302014;
+    private static final int LINE = 0xFF593019;
+    private static final int ORANGE = 0xFFFF8500;
     private static final int WHITE = 0xFFF5F0F8;
     private static final int MUTED = 0xFFB6AABD;
     private static final int GREEN = 0xFF62E79A;
