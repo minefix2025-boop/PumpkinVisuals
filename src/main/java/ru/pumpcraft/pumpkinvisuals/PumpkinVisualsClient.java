@@ -38,6 +38,8 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
     public static boolean triggerBotEnabled = false;
     public static boolean killAuraEnabled = false;
     public static boolean playerEspEnabled = false;
+    public static boolean chineseHatEnabled = true;
+    public static boolean autoSprintEnabled = false;
 
     private static long lastEatTime;
     private static int ticksSinceScan;
@@ -62,6 +64,11 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
                 }
             }
 
+            if (autoSprintEnabled && client.player != null && client.player.input != null
+                    && client.player.input.movementForward > 0.0f && !client.player.isSneaking()) {
+                client.player.setSprinting(true);
+            }
+
             if (autoEatEnabled && client.player != null && client.interactionManager != null
                     && client.player.getHungerManager().getFoodLevel() <= 14
                     && !client.player.isUsingItem()) {
@@ -84,7 +91,7 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.world == null || client.player == null
-                    || ((!xrayEnabled || cachedOres.isEmpty()) && !playerEspEnabled)) return;
+                    || ((!xrayEnabled || cachedOres.isEmpty()) && !playerEspEnabled && !chineseHatEnabled)) return;
             MatrixStack matrices = context.matrixStack();
             if (matrices == null) return;
             Vec3d camera = context.camera().getPos();
@@ -99,6 +106,15 @@ public final class PumpkinVisualsClient implements ClientModInitializer {
                         float[] color = oreColor(client.world.getBlockState(pos));
                         VertexRendering.drawBox(matrices, lines, box, color[0], color[1], color[2], 0.95f);
                     }
+                }
+                if (chineseHatEnabled) {
+                    // A stepped conical hat made from three outlined rings/tiers, attached to the local player's head.
+                    double hx = client.player.getX();
+                    double hy = client.player.getY() + (client.player.getHeight() * 0.86);
+                    double hz = client.player.getZ();
+                    VertexRendering.drawBox(matrices, lines, new Box(hx - 0.36, hy + 0.10, hz - 0.36, hx + 0.36, hy + 0.14, hz + 0.36), 1.0f, 0.48f, 0.05f, 1.0f);
+                    VertexRendering.drawBox(matrices, lines, new Box(hx - 0.24, hy + 0.14, hz - 0.24, hx + 0.24, hy + 0.24, hz + 0.24), 1.0f, 0.58f, 0.10f, 1.0f);
+                    VertexRendering.drawBox(matrices, lines, new Box(hx - 0.10, hy + 0.24, hz - 0.10, hx + 0.10, hy + 0.34, hz + 0.10), 1.0f, 0.68f, 0.18f, 1.0f);
                 }
                 if (playerEspEnabled) {
                     for (var other : client.world.getPlayers()) {
